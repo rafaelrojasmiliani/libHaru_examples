@@ -6,11 +6,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_TESTING "Build unit tests" ON)
+option(LIBHARU_EXAMPLES_AUTO_INIT_SUBMODULES
+  "Automatically initialize git submodules during configure"
+  ON
+)
+
+find_package(Git QUIET)
+if(LIBHARU_EXAMPLES_AUTO_INIT_SUBMODULES
+   AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git"
+   AND GIT_FOUND)
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" submodule update --init --recursive -- libharu
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    RESULT_VARIABLE LIBHARU_SUBMODULE_RESULT
+    OUTPUT_QUIET
+    ERROR_QUIET
+  )
+  if(NOT LIBHARU_SUBMODULE_RESULT EQUAL 0)
+    message(WARNING "Automatic submodule initialization failed; falling back to local checkout state.")
+  endif()
+endif()
 
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libharu/CMakeLists.txt")
   message(FATAL_ERROR
     "The libharu submodule is not available. Run:\n"
-    "  git submodule update --init --recursive")
+    "  git submodule update --init --recursive\n"
+    "Or configure with -DLIBHARU_EXAMPLES_AUTO_INIT_SUBMODULES=ON from a git checkout.")
 endif()
 
 add_subdirectory(libharu)

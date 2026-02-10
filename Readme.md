@@ -11,10 +11,29 @@ This repository now has a CMake-based project layout that uses the `libharu` sub
 
 ## Configure and build
 
+### Option 1 (recommended): initialize submodules manually first
+
 ```bash
 git submodule update --init --recursive
 cmake -S . -B build
 cmake --build build
+```
+
+### Option 2: let CMake initialize `libharu` automatically
+
+The top-level CMake file can run:
+`git submodule update --init --recursive -- libharu`
+during configure (enabled by default when Git is available).
+
+```bash
+cmake -S . -B build -DLIBHARU_EXAMPLES_AUTO_INIT_SUBMODULES=ON
+cmake --build build
+```
+
+If you do not want CMake to perform Git operations, disable it:
+
+```bash
+cmake -S . -B build -DLIBHARU_EXAMPLES_AUTO_INIT_SUBMODULES=OFF
 ```
 
 ## Run tests
