@@ -24,6 +24,8 @@ add_library(libharu_examples::libharu_examples ALIAS libharu_examples)
 target_include_directories(libharu_examples
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/libharu/include
 )
 
 target_link_libraries(libharu_examples
