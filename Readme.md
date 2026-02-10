@@ -36,6 +36,16 @@ If you do not want CMake to perform Git operations, disable it:
 cmake -S . -B build -DLIBHARU_EXAMPLES_AUTO_INIT_SUBMODULES=OFF
 ```
 
+## Notes about libharu generated headers
+
+libharu generates headers under the build tree (typically `build/libharu/include/`).
+The top-level CMake target `libharu_examples` includes both:
+
+- `libharu/include` (submodule source headers)
+- `${CMAKE_CURRENT_BINARY_DIR}/libharu/include` (generated headers)
+
+so sources that include generated libharu headers can compile without extra setup.
+
 ## Run tests
 
 ```bash

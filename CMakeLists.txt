@@ -47,6 +47,7 @@ target_include_directories(libharu_examples
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/libharu/include
+    ${CMAKE_CURRENT_BINARY_DIR}/libharu/include
 )
 
 target_link_libraries(libharu_examples
