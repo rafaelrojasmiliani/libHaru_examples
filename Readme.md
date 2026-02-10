@@ -64,3 +64,9 @@ ctest --test-dir build --output-on-failure
 ```bash
 ./build/examples/invoice_example invoice.pdf
 ```
+
+## Run formal invoice example
+
+```bash
+./build/examples/invoice_formal_example invoice_formal.pdf
+```

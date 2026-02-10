@@ -2,6 +2,7 @@
 
 #include <hpdf.h>
 
+#include <cstddef>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -18,22 +19,44 @@ std::string money_string(double value) {
   return stream.str();
 }
 
-void draw_text_line(HPDF_Page page,
-                    float& y,
-                    const std::string& text,
-                    const float page_width,
-                    const float left_margin) {
+void draw_text(HPDF_Page page,
+               HPDF_Font font,
+               const float size,
+               const float x,
+               const float y,
+               const std::string& text) {
   HPDF_Page_BeginText(page);
-  HPDF_Page_TextRect(page,
-                     left_margin,
-                     y,
-                     page_width - left_margin,
-                     y - 16,
-                     text.c_str(),
-                     HPDF_TALIGN_LEFT,
-                     nullptr);
+  HPDF_Page_SetFontAndSize(page, font, size);
+  HPDF_Page_TextOut(page, x, y, text.c_str());
   HPDF_Page_EndText(page);
-  y -= 18;
+}
+
+void draw_label_value(HPDF_Page page,
+                      HPDF_Font label_font,
+                      HPDF_Font value_font,
+                      const float x_label,
+                      const float x_value,
+                      const float y,
+                      const std::string& label,
+                      const std::string& value) {
+  draw_text(page, label_font, 10.5F, x_label, y, label);
+  draw_text(page, value_font, 10.5F, x_value, y, value);
+}
+
+void draw_line(HPDF_Page page,
+               const float x1,
+               const float y1,
+               const float x2,
+               const float y2,
+               const float line_width,
+               const float red,
+               const float green,
+               const float blue) {
+  HPDF_Page_SetLineWidth(page, line_width);
+  HPDF_Page_SetRGBStroke(page, red, green, blue);
+  HPDF_Page_MoveTo(page, x1, y1);
+  HPDF_Page_LineTo(page, x2, y2);
+  HPDF_Page_Stroke(page);
 }
 
 }  // namespace
@@ -45,6 +68,12 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
   if (output_pdf_path.empty() || provider.name.empty() || client.name.empty() ||
       items.empty()) {
     return false;
+  }
+
+  for (const Item& item : items) {
+    if (item.quantity <= 0 || item.unit_price < 0.0) {
+      return false;
+    }
   }
 
   HPDF_Doc pdf = HPDF_New(error_handler, nullptr);
@@ -59,70 +88,216 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
   }
 
   HPDF_Page_SetSize(page, HPDF_PAGE_SIZE_A4, HPDF_PAGE_PORTRAIT);
-  HPDF_Font title_font = HPDF_GetFont(pdf, "Helvetica-Bold", nullptr);
-  HPDF_Font body_font = HPDF_GetFont(pdf, "Helvetica", nullptr);
+
+  HPDF_Font bold_font = HPDF_GetFont(pdf, "Helvetica-Bold", nullptr);
+  HPDF_Font regular_font = HPDF_GetFont(pdf, "Helvetica", nullptr);
+  HPDF_Font italic_font = HPDF_GetFont(pdf, "Helvetica-Oblique", nullptr);
 
   const float page_width = HPDF_Page_GetWidth(page);
-  const float left_margin = 50.0F;
-  float y = 800.0F;
+  const float page_height = HPDF_Page_GetHeight(page);
+  const float margin_left = 50.0F;
+  const float margin_right = page_width - 50.0F;
 
-  HPDF_Page_SetFontAndSize(page, title_font, 20);
-  draw_text_line(page, y, "INVOICE", page_width, left_margin);
+  // Theme colors (deep navy + accent red)
+  const float navy_r = 0.11F;
+  const float navy_g = 0.16F;
+  const float navy_b = 0.35F;
+  const float accent_r = 0.86F;
+  const float accent_g = 0.33F;
+  const float accent_b = 0.29F;
 
-  HPDF_Page_SetFontAndSize(page, body_font, 11);
-  y -= 10;
-  draw_text_line(page, y, "Provider: " + provider.name, page_width, left_margin);
-  if (!provider.address.empty()) {
-    draw_text_line(page, y, "Address: " + provider.address, page_width, left_margin);
-  }
-  if (!provider.email.empty()) {
-    draw_text_line(page, y, "Email: " + provider.email, page_width, left_margin);
-  }
+  // Header
+  HPDF_Page_SetRGBFill(page, navy_r, navy_g, navy_b);
+  draw_text(page, bold_font, 52.0F, margin_left, page_height - 90.0F, "INVOICE");
 
-  y -= 8;
-  draw_text_line(page, y, "Bill To: " + client.name, page_width, left_margin);
-  if (!client.address.empty()) {
-    draw_text_line(page, y, "Address: " + client.address, page_width, left_margin);
-  }
-  if (!client.email.empty()) {
-    draw_text_line(page, y, "Email: " + client.email, page_width, left_margin);
-  }
+  // Logo placeholder circle
+  HPDF_Page_SetRGBStroke(page, 0.70F, 0.72F, 0.76F);
+  HPDF_Page_SetRGBFill(page, 0.70F, 0.72F, 0.76F);
+  HPDF_Page_Circle(page, margin_right - 35.0F, page_height - 70.0F, 35.0F);
+  HPDF_Page_Fill(page);
+  HPDF_Page_SetRGBFill(page, 1.0F, 1.0F, 1.0F);
+  draw_text(page, bold_font, 16.0F, margin_right - 56.0F, page_height - 76.0F, "LOGO");
 
-  y -= 12;
-  HPDF_Page_SetFontAndSize(page, title_font, 12);
-  draw_text_line(page,
-                 y,
-                 "Description                       Qty      Unit Price      Line Total",
-                 page_width,
-                 left_margin);
+  // Provider block
+  HPDF_Page_SetRGBFill(page, 0.05F, 0.07F, 0.12F);
+  draw_text(page, bold_font, 12.0F, margin_left, page_height - 140.0F, provider.name);
+  draw_text(page, regular_font, 11.0F, margin_left, page_height - 160.0F, provider.address);
+  draw_text(page, regular_font, 11.0F, margin_left, page_height - 178.0F, provider.email);
 
-  HPDF_Page_SetFontAndSize(page, body_font, 11);
-  double total = 0.0;
-  for (const Item& item : items) {
-    if (item.quantity <= 0 || item.unit_price < 0.0) {
-      HPDF_Free(pdf);
-      return false;
-    }
+  // Top information columns
+  const float block_top = page_height - 235.0F;
+  const float col1_x = margin_left;
+  const float col2_x = margin_left + 180.0F;
+  const float col3_x = margin_left + 390.0F;
 
-    const double line_total = static_cast<double>(item.quantity) * item.unit_price;
-    total += line_total;
+  HPDF_Page_SetRGBFill(page, navy_r, navy_g, navy_b);
+  draw_text(page, bold_font, 11.5F, col1_x, block_top, "BILL TO");
+  draw_text(page, bold_font, 11.5F, col2_x, block_top, "SHIP TO");
+
+  HPDF_Page_SetRGBFill(page, 0.05F, 0.07F, 0.12F);
+  draw_text(page, bold_font, 11.0F, col1_x, block_top - 20.0F, client.name);
+  draw_text(page, regular_font, 11.0F, col1_x, block_top - 38.0F, client.address);
+  draw_text(page, regular_font, 11.0F, col1_x, block_top - 56.0F, client.email);
+
+  // Reuse client as ship-to to keep the same class model.
+  draw_text(page, bold_font, 11.0F, col2_x, block_top - 20.0F, client.name);
+  draw_text(page, regular_font, 11.0F, col2_x, block_top - 38.0F, client.address);
+  draw_text(page, regular_font, 11.0F, col2_x, block_top - 56.0F, client.email);
+
+  const std::string invoice_number = "INV-" + std::to_string(items.size()) + "-2026";
+  draw_label_value(page,
+                   bold_font,
+                   regular_font,
+                   col3_x,
+                   col3_x + 100.0F,
+                   block_top,
+                   "INVOICE #",
+                   invoice_number);
+  draw_label_value(page,
+                   bold_font,
+                   regular_font,
+                   col3_x,
+                   col3_x + 100.0F,
+                   block_top - 20.0F,
+                   "INVOICE DATE",
+                   "10/02/2026");
+  draw_label_value(page,
+                   bold_font,
+                   regular_font,
+                   col3_x,
+                   col3_x + 100.0F,
+                   block_top - 40.0F,
+                   "P.O.#",
+                   "PO-4821");
+  draw_label_value(page,
+                   bold_font,
+                   regular_font,
+                   col3_x,
+                   col3_x + 100.0F,
+                   block_top - 60.0F,
+                   "DUE DATE",
+                   "25/02/2026");
+
+  // Table header lines and titles
+  const float table_top = page_height - 330.0F;
+  draw_line(page,
+            margin_left,
+            table_top,
+            margin_right,
+            table_top,
+            1.5F,
+            accent_r,
+            accent_g,
+            accent_b);
+
+  HPDF_Page_SetRGBFill(page, navy_r, navy_g, navy_b);
+  draw_text(page, bold_font, 11.5F, margin_left + 20.0F, table_top - 20.0F, "QTY");
+  draw_text(page, bold_font, 11.5F, margin_left + 140.0F, table_top - 20.0F, "DESCRIPTION");
+  draw_text(page, bold_font, 11.5F, margin_left + 420.0F, table_top - 20.0F, "UNIT PRICE");
+  draw_text(page, bold_font, 11.5F, margin_right - 60.0F, table_top - 20.0F, "AMOUNT");
+
+  draw_line(page,
+            margin_left,
+            table_top - 28.0F,
+            margin_right,
+            table_top - 28.0F,
+            1.5F,
+            accent_r,
+            accent_g,
+            accent_b);
+
+  // Items
+  HPDF_Page_SetRGBFill(page, 0.05F, 0.07F, 0.12F);
+  float y = table_top - 55.0F;
+  double subtotal = 0.0;
+
+  for (std::size_t i = 0; i < items.size(); ++i) {
+    const Item& item = items[i];
+    const double amount = static_cast<double>(item.quantity) * item.unit_price;
+    subtotal += amount;
+
+    draw_text(page, regular_font, 11.0F, margin_left + 28.0F, y, std::to_string(item.quantity));
 
     std::string description = item.description.empty() ? "(no description)" : item.description;
-    if (description.size() > 28) {
-      description = description.substr(0, 25) + "...";
+    if (description.size() > 42) {
+      description = description.substr(0, 39) + "...";
     }
+    draw_text(page, regular_font, 11.0F, margin_left + 80.0F, y, description);
 
-    std::ostringstream line_stream;
-    line_stream << std::left << std::setw(34) << description << std::right << std::setw(8)
-                << item.quantity << std::setw(16) << money_string(item.unit_price)
-                << std::setw(16) << money_string(line_total);
+    const std::string unit_price_text = money_string(item.unit_price);
+    const std::string amount_text = money_string(amount);
 
-    draw_text_line(page, y, line_stream.str(), page_width, left_margin);
+    draw_text(page, regular_font, 11.0F, margin_left + 470.0F, y, unit_price_text);
+    draw_text(page, regular_font, 11.0F, margin_left + 560.0F, y, amount_text);
+    y -= 28.0F;
   }
 
-  y -= 10;
-  HPDF_Page_SetFontAndSize(page, title_font, 12);
-  draw_text_line(page, y, "Total: " + money_string(total), page_width, left_margin);
+  // Totals block
+  const double tax = subtotal * 0.05;
+  const double total = subtotal + tax;
+  const float totals_y = y - 10.0F;
+
+  draw_text(page, regular_font, 11.0F, margin_left + 420.0F, totals_y, "Subtotal");
+  draw_text(page, regular_font, 11.0F, margin_left + 560.0F, totals_y, money_string(subtotal));
+
+  draw_text(page, regular_font, 11.0F, margin_left + 380.0F, totals_y - 22.0F, "Sales Tax 5.0%");
+  draw_text(page,
+            regular_font,
+            11.0F,
+            margin_left + 560.0F,
+            totals_y - 22.0F,
+            money_string(tax));
+
+  HPDF_Page_SetRGBFill(page, navy_r, navy_g, navy_b);
+  draw_text(page, bold_font, 18.0F, margin_left + 430.0F, totals_y - 50.0F, "TOTAL");
+  draw_text(page, bold_font, 18.0F, margin_left + 550.0F, totals_y - 50.0F, "$" + money_string(total));
+
+  // Signature and footer
+  HPDF_Page_SetRGBFill(page, 0.05F, 0.07F, 0.12F);
+  draw_text(page, italic_font, 28.0F, margin_left + 470.0F, totals_y - 120.0F, provider.name);
+
+  const float footer_y = 120.0F;
+  HPDF_Page_SetRGBFill(page, navy_r, navy_g, navy_b);
+  draw_text(page, italic_font, 56.0F, margin_left + 60.0F, footer_y, "Thank you");
+
+  draw_line(page,
+            margin_left + 300.0F,
+            footer_y - 8.0F,
+            margin_left + 300.0F,
+            footer_y + 110.0F,
+            1.0F,
+            navy_r,
+            navy_g,
+            navy_b);
+
+  HPDF_Page_SetRGBFill(page, accent_r, accent_g, accent_b);
+  draw_text(page,
+            bold_font,
+            15.0F,
+            margin_left + 310.0F,
+            footer_y + 95.0F,
+            "TERMS & CONDITIONS");
+
+  HPDF_Page_SetRGBFill(page, 0.05F, 0.07F, 0.12F);
+  draw_text(page,
+            regular_font,
+            11.0F,
+            margin_left + 310.0F,
+            footer_y + 62.0F,
+            "Payment is due within 15 days");
+  draw_text(page, regular_font, 11.0F, margin_left + 310.0F, footer_y + 38.0F, "Name of Bank");
+  draw_text(page,
+            regular_font,
+            11.0F,
+            margin_left + 310.0F,
+            footer_y + 20.0F,
+            "Account number: 1234567890");
+  draw_text(page,
+            regular_font,
+            11.0F,
+            margin_left + 310.0F,
+            footer_y + 2.0F,
+            "Routing: 098765432");
 
   const HPDF_STATUS save_result = HPDF_SaveToFile(pdf, output_pdf_path.c_str());
   HPDF_Free(pdf);

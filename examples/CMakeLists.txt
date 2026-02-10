@@ -22,3 +22,13 @@ target_link_libraries(invoice_example
   PRIVATE
     libharu_examples::libharu_examples
 )
+
+
+add_executable(invoice_formal_example
+  invoice/invoice_formal_example_main.cpp
+)
+
+target_link_libraries(invoice_formal_example
+  PRIVATE
+    libharu_examples::libharu_examples
+)
