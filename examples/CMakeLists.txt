@@ -12,3 +12,13 @@ add_custom_command(TARGET text_example POST_BUILD
     ${CMAKE_CURRENT_SOURCE_DIR}/text
     $<TARGET_FILE_DIR:text_example>/text
 )
+
+
+add_executable(invoice_example
+  invoice/invoice_example_main.cpp
+)
+
+target_link_libraries(invoice_example
+  PRIVATE
+    libharu_examples::libharu_examples
+)

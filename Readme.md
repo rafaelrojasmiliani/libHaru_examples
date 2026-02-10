@@ -7,6 +7,7 @@ This repository now has a CMake-based project layout that uses the `libharu` sub
 - `include/` public headers for the example library.
 - `src/` implementation for the example library.
 - `examples/text/` text-driven example inputs and executable source.
+- `examples/invoice/` invoice PDF example executable source.
 - `tests/` GoogleTest test targets for the library.
 
 ## Configure and build
@@ -56,4 +57,10 @@ ctest --test-dir build --output-on-failure
 
 ```bash
 ./build/examples/text_example ./build/examples/text/hello_world.txt hello_world.pdf
+```
+
+## Run invoice example
+
+```bash
+./build/examples/invoice_example invoice.pdf
 ```
