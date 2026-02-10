@@ -1,0 +1,5 @@
+Invoice Example
+--------------
+Client: Example Industries
+Total: $125.00
+Status: Paid

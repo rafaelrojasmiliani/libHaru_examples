@@ -1,0 +1,9 @@
+/build/
+cmake-*
+tags
+GPATH
+GRTAGS
+GTAGS
+.*.sw?
+compile_commands.json
+.cache
