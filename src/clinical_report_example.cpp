@@ -1,3 +1,21 @@
+/*
+High-level overview
+-------------------
+This file creates a clinical ultrasound-style report PDF using libHaru drawing primitives.
+The document is intentionally template-like: fixed margins, fixed text blocks, and consistent
+horizontal separators to mirror typical diagnostic report formatting.
+
+1) Validate report inputs and initialize libHaru document/page/font resources.
+2) Draw the static template structure (brand header, patient strip, section headings, footer).
+3) Fill clinical content and reserve an explicit empty square for ultrasound image data.
+
+libHaru logic addressed in this example
+---------------------------------------
+- Text placement is absolute; we use measured y offsets to maintain clean medical-report spacing.
+- Horizontal rules are plain vector strokes (`MoveTo` + `LineTo` + `Stroke`).
+- Visual bands are filled rectangles to create report identity strips.
+- Placeholder imaging area is drawn as an unfilled square, as requested.
+*/
 #include "libharu_examples/clinical_report_example.h"
 
 #include <hpdf.h>
@@ -35,11 +53,13 @@ void draw_hline(HPDF_Page page, const float x1, const float x2, const float y) {
 bool ClinicalReportExample::create_clinical_report_pdf(const Patient& patient,
                                                        const ReferringDoctor& doctor,
                                                        const std::string& output_pdf_path) const {
+  // Step 1: Validate minimal required payload before allocating libHaru objects.
   if (output_pdf_path.empty() || patient.full_name.empty() || patient.patient_id.empty() ||
       doctor.name.empty()) {
     return false;
   }
 
+  // Step 2: Initialize libHaru document and a single A4 page to host the report.
   HPDF_Doc pdf = HPDF_New(error_handler, nullptr);
   if (pdf == nullptr) {
     return false;
@@ -61,7 +81,7 @@ bool ClinicalReportExample::create_clinical_report_pdf(const Patient& patient,
   const float left = 40.0F;
   const float right = width - 40.0F;
 
-  // Header
+  // Step 3: Draw top branding/header area (title + modality line + blue bar).
   HPDF_Page_SetRGBFill(page, 0.06F, 0.23F, 0.56F);
   draw_text(page, bold_font, 28.0F, left, height - 58.0F, "DRLOGY IMAGING CENTER");
   HPDF_Page_SetRGBFill(page, 0.1F, 0.1F, 0.1F);
@@ -72,7 +92,7 @@ bool ClinicalReportExample::create_clinical_report_pdf(const Patient& patient,
   HPDF_Page_Rectangle(page, 0.0F, height - 126.0F, width, 18.0F);
   HPDF_Page_Fill(page);
 
-  // Patient strip
+  // Step 4: Draw patient/referring-doctor summary strip.
   HPDF_Page_SetRGBFill(page, 0.1F, 0.1F, 0.1F);
   draw_text(page, bold_font, 16.0F, left, height - 170.0F, patient.full_name);
   draw_text(page,
@@ -90,7 +110,7 @@ bool ClinicalReportExample::create_clinical_report_pdf(const Patient& patient,
 
   draw_hline(page, left, right, height - 226.0F);
 
-  // Title
+  // Step 5: Draw central exam title and narrative findings sections.
   draw_text(page, bold_font, 36.0F, left + 160.0F, height - 272.0F, "ULTRASOUND KUB");
 
   // Findings sections
@@ -150,7 +170,7 @@ bool ClinicalReportExample::create_clinical_report_pdf(const Patient& patient,
   y -= 20.0F;
   draw_text(page, regular_font, 12.0F, left, y, "CLINICAL CORRELATION");
 
-  // Empty ultrasound square placeholder (requested)
+  // Step 6: Reserve imaging area with an empty square placeholder (requested).
   const float box_x = left + 170.0F;
   const float box_y = y - 250.0F;
   const float box_size = 250.0F;
@@ -165,6 +185,7 @@ bool ClinicalReportExample::create_clinical_report_pdf(const Patient& patient,
             box_y + box_size / 2.0F,
             "Ultrasound image placeholder");
 
+  // Step 7: Draw footer markers/signature labels and finalize output.
   draw_hline(page, left, right, 95.0F);
   draw_text(page, regular_font, 11.0F, left, 78.0F, "Thanks for Reference");
   draw_text(page, regular_font, 11.0F, left + 250.0F, 78.0F, "****End of Report****");

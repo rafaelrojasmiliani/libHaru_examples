@@ -1,3 +1,20 @@
+/*
+High-level overview
+-------------------
+This file implements a full invoice renderer using libHaru primitives (text, lines,
+simple vector shapes, and page metrics). The overall flow is:
+
+1) Validate invoice inputs and initialize the `HPDF_Doc` + A4 page.
+2) Build visual structure using reusable drawing helpers (`draw_text`, `draw_line`).
+3) Render business content (header, parties, item table, totals, footer), save, free.
+
+libHaru logic addressed in this example
+---------------------------------------
+- Coordinate system: positions are expressed in points from bottom-left.
+- Styling is explicit: fill color, stroke color, line width, and font are set before draw calls.
+- Text is rendered through text objects; this file wraps repetitive calls in helpers.
+- Layout is deterministic: fixed margins/columns enable repeatable output similar to form templates.
+*/
 #include "libharu_examples/invoice_example.h"
 
 #include <hpdf.h>
@@ -65,6 +82,7 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
                                     const Client& client,
                                     const std::vector<Item>& items,
                                     const std::string& output_pdf_path) const {
+  // Step 1: Validate semantic inputs before touching libHaru resources.
   if (output_pdf_path.empty() || provider.name.empty() || client.name.empty() ||
       items.empty()) {
     return false;
@@ -76,6 +94,7 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
     }
   }
 
+  // Step 2: Allocate libHaru document/page objects and base typography resources.
   HPDF_Doc pdf = HPDF_New(error_handler, nullptr);
   if (pdf == nullptr) {
     return false;
@@ -106,7 +125,7 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
   const float accent_g = 0.33F;
   const float accent_b = 0.29F;
 
-  // Header
+  // Step 3: Draw the invoice header region and branding placeholder.
   HPDF_Page_SetRGBFill(page, navy_r, navy_g, navy_b);
   draw_text(page, bold_font, 52.0F, margin_left, page_height - 90.0F, "INVOICE");
 
@@ -118,7 +137,7 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
   HPDF_Page_SetRGBFill(page, 1.0F, 1.0F, 1.0F);
   draw_text(page, bold_font, 16.0F, margin_right - 56.0F, page_height - 76.0F, "LOGO");
 
-  // Provider block
+  // Step 4: Render provider/client/meta sections as aligned columns.
   HPDF_Page_SetRGBFill(page, 0.05F, 0.07F, 0.12F);
   draw_text(page, bold_font, 12.0F, margin_left, page_height - 140.0F, provider.name);
   draw_text(page, regular_font, 11.0F, margin_left, page_height - 160.0F, provider.address);
@@ -178,7 +197,7 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
                    "DUE DATE",
                    "25/02/2026");
 
-  // Table header lines and titles
+  // Step 5: Build the items table structure (header separators + headings).
   const float table_top = page_height - 330.0F;
   draw_line(page,
             margin_left,
@@ -206,7 +225,7 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
             accent_g,
             accent_b);
 
-  // Items
+  // Step 6: Iterate invoice items and draw each row with consistent spacing.
   HPDF_Page_SetRGBFill(page, 0.05F, 0.07F, 0.12F);
   float y = table_top - 55.0F;
   double subtotal = 0.0;
@@ -232,7 +251,7 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
     y -= 28.0F;
   }
 
-  // Totals block
+  // Step 7: Compute and render financial totals (subtotal, tax, grand total).
   const double tax = subtotal * 0.05;
   const double total = subtotal + tax;
   const float totals_y = y - 10.0F;
@@ -252,7 +271,7 @@ bool InvoiceExample::createInvoidcw(const Provider& provider,
   draw_text(page, bold_font, 18.0F, margin_left + 430.0F, totals_y - 50.0F, "TOTAL");
   draw_text(page, bold_font, 18.0F, margin_left + 550.0F, totals_y - 50.0F, "$" + money_string(total));
 
-  // Signature and footer
+  // Step 8: Draw signature/footer region, then save and release document memory.
   HPDF_Page_SetRGBFill(page, 0.05F, 0.07F, 0.12F);
   draw_text(page, italic_font, 28.0F, margin_left + 470.0F, totals_y - 120.0F, provider.name);
 
