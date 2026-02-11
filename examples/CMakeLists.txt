@@ -32,3 +32,13 @@ target_link_libraries(invoice_formal_example
   PRIVATE
     libharu_examples::libharu_examples
 )
+
+
+add_executable(clinical_report_example
+  clinical/clinical_report_example_main.cpp
+)
+
+target_link_libraries(clinical_report_example
+  PRIVATE
+    libharu_examples::libharu_examples
+)

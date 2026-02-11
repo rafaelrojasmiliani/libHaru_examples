@@ -12,6 +12,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(libharu_examples_tests
   test_pdf_text_example.cpp
   test_invoice_example.cpp
+  test_clinical_report_example.cpp
 )
 target_include_directories(
   libharu_examples_tests

@@ -43,6 +43,7 @@ add_subdirectory(libharu)
 add_library(libharu_examples
   src/pdf_text_example.cpp
   src/invoice_example.cpp
+  src/clinical_report_example.cpp
 )
 
 add_library(libharu_examples::libharu_examples ALIAS libharu_examples)
