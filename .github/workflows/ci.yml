@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: |
+          files=$(git ls-files '*.h' '*.hpp' '*.c' '*.cc' '*.cpp')
+          if [ -z "$files" ]; then
+            echo "No C/C++ files to format check."
+            exit 0
+          fi
+          clang-format --dry-run --Werror $files
+
+  build-no-warnings:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_TESTING=OFF
+          -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror"
+
+      - name: Build
+        run: cmake --build build --parallel
