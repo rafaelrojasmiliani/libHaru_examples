@@ -22,7 +22,7 @@ libHaru logic addressed by this executable
 #include <iterator>
 #include <string>
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Step 1: Resolve input/output paths from CLI arguments with sensible defaults.
   const std::string text_file = (argc > 1) ? argv[1] : "text/hello_world.txt";
   const std::string output_pdf = (argc > 2) ? argv[2] : "text_example.pdf";

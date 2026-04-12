@@ -17,7 +17,7 @@ libHaru logic addressed by this executable
 
 #include <iostream>
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Step 1: Resolve output path from command line or default value.
   const std::string output_pdf = (argc > 1) ? argv[1] : "clinical_report_example.pdf";
 

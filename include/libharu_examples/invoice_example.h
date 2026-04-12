@@ -6,7 +6,7 @@
 namespace libharu_examples {
 
 class InvoiceExample {
- public:
+public:
   struct Client {
     std::string name;
     std::string address;
@@ -25,10 +25,7 @@ class InvoiceExample {
     double unit_price;
   };
 
-  bool createInvoidcw(const Provider& provider,
-                      const Client& client,
-                      const std::vector<Item>& items,
-                      const std::string& output_pdf_path) const;
+  bool createInvoidcw(const Provider &provider, const Client &client, const std::vector<Item> &items, const std::string &output_pdf_path) const;
 };
 
-}  // namespace libharu_examples
+} // namespace libharu_examples

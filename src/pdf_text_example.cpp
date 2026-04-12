@@ -22,16 +22,13 @@ libHaru logic addressed in this example
 namespace libharu_examples {
 namespace {
 
-void error_handler(HPDF_STATUS, HPDF_STATUS, void*) {
-}
+void error_handler(HPDF_STATUS, HPDF_STATUS, void *) {}
 
-}  // namespace
+} // namespace
 
-std::string default_example_text() {
-  return "Hello from a libHaru text example.";
-}
+std::string default_example_text() { return "Hello from a libHaru text example."; }
 
-bool create_text_pdf(const std::string& output_pdf_path, const std::string& text) {
+bool create_text_pdf(const std::string &output_pdf_path, const std::string &text) {
   // Step 1: Validate user inputs to avoid producing invalid/empty output.
   if (output_pdf_path.empty() || text.empty()) {
     return false;
@@ -66,4 +63,4 @@ bool create_text_pdf(const std::string& output_pdf_path, const std::string& text
   return save_result == HPDF_OK;
 }
 
-}  // namespace libharu_examples
+} // namespace libharu_examples
